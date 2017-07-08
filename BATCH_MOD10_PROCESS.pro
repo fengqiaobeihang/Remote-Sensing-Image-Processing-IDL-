@@ -1,0 +1,47 @@
+;MOD10A1 积雪反照率 面积比例 提取
+;shaodonghang
+PRO BATCH_MOD10_PROCESS
+    COMPILE_OPT IDL2
+    ENVI, /RESTORE_BASE_SAVE_FILES
+    ENVI_BATCH_INIT, LOG_FILE='BATCH.LOG'
+    PRINT, 'START : ',SYSTIME()
+   
+    ROOT_DIR = 'E:\MOD09GA\MOD09GA_pro\'
+    FNS = FILE_SEARCH(ROOT_DIR,'*.HDF',COUNT = COUNT)
+    PRINT, 'There ara totally', COUNT,' images.'
+   
+    OUTPUT_LOCATION = 'E:\MOD09GA\MOD09GA_refl\' ;路径根据数据存储位置修改
+    GRID_NAME = 'MODIS_Grid_500m_2D'
+    SD_NAMES = ['sur_refl_b01_1','sur_refl_b02_1','sur_refl_b03_1','sur_refl_b04_1','sur_refl_b05_1','sur_refl_b06_1','sur_refl_b07_1'] ;提取数据类型
+    ;OUTPUT_METHOD = 1  ;REPROJECTED
+    OUTPUT_METHOD = 0 ;Standard
+   
+    ;投影转换设定
+    UNITS = ENVI_TRANSLATE_PROJECTION_UNITS('Meters')
+    OUTPUT_PROJECTION = ENVI_PROJ_CREATE(/UTM,ZONE=47,UNITS=UNITS)
+    OUTPUT_PS_X = 500
+    OUTPUT_PS_Y = 500
+   
+    INTERPOLATION_METHOD = 8 ;TRIANGULATION WITH NEAREST NEIGHBOR
+   
+    ;调用MTCK
+    FOR i = 0, COUNT-1  DO BEGIN
+        FILENAME = FNS[i]
+        A = STRPOS(FILENAME,'.')
+        ;OUTPUT_ROOT_NAME = 'NIR_'+ STRMID(FILENAME,A+1,8)STRMID(filename,0,23)(FILENAME,A+1,8)
+        OUTPUT_ROOT_NAME = STRMID(FILENAME,A+1,8)+'_reflectance'
+        CONVERT_MODIS_DATA, IN_FILE = FILENAME, $
+            OUT_PATH = OUTPUT_LOCATION, OUT_ROOT=OUTPUT_ROOT_NAME, $
+            /HIGHER_PRODUCT, /GRID, GD_NAME=GRID_NAME,SD_NAMES = SD_NAMES, $
+            OUT_METHOD = OUTPUT_METHOD, OUT_PROJ = OUTPUT_PROJECTION, $
+            OUT_PS_X = OUTPUT_PS_X, OUT_PS_Y = OUTPUT_PS_Y, $
+            NUM_X_PTS = 50, $
+            NUM_Y_PTS=50, $;INTERP_METHOD = INTERPOLATION_METHOD, $
+            BACKGROUND='0', FILL_REPLACE_VALUE='0',$
+            R_FID_ARRAY=R_FID_ARRAY, R_FNAME_ARRAY=R_FNAME_ARRAY, /NO_MSG
+      
+    ENDFOR
+    PRINT, 'END : ', SYSTIME()
+    ENVI_BATCH_EXIT
+   
+END
